@@ -13,10 +13,10 @@ spec:
         app: demo-app
     spec:
       imagePullSecrets:
-        - name: dockerhub-secret
+        - name: harbor-secret
       containers:
         - name: demo-app
-          image: manojdeshmukh45/demo-app:latest
+          image: r.badshah.io/manojdmd45-project/demo-app:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
