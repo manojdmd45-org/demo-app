@@ -1,0 +1,40 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'k8s/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: arc-runners
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to DockerHub
+        run: echo $DOCKER_PASS | docker login -u manojdeshmukh45 --password-stdin
+        env:
+          DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+
+      - name: Build Image
+        run: docker build -t manojdeshmukh45/demo-app:${{ github.sha }} .
+
+      - name: Push Image
+        run: docker push manojdeshmukh45/demo-app:${{ github.sha }}
+
+      - name: Update Kubernetes Manifest and Push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sed -i "s|image:.*|image: manojdeshmukh45/demo-app:${{ github.sha }}|g" k8s/deployment.yaml
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git commit -am "Update image tag"
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git push
