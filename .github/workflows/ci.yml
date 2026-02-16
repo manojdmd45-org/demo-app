@@ -17,22 +17,29 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Login to DockerHub
-        run: echo $DOCKER_PASS | docker login -u manojdeshmukh45 --password-stdin
-        env:
-          DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      # 🔥 LOGIN TO HARBOR (NOT DOCKERHUB)
+      - name: Login to Harbor
+        run: |
+          echo "${{ secrets.HARBOR_TOKEN }}" | docker login r.badshah.io \
+            -u "${{ secrets.HARBOR_USERNAME }}" \
+            --password-stdin
 
+      # 🔥 BUILD IMAGE (IMPORTANT: MUST USE HARBOR PATH)
       - name: Build Image
-        run: docker build -t manojdeshmukh45/demo-app:${{ github.sha }} .
+        run: |
+          docker build -t r.badshah.io/${{ secrets.HARBOR_USERNAME##*+ }}/demo-app:${{ github.sha }} .
 
+      # 🔥 PUSH IMAGE
       - name: Push Image
-        run: docker push manojdeshmukh45/demo-app:${{ github.sha }}
+        run: |
+          docker push r.badshah.io/${{ secrets.HARBOR_USERNAME##*+ }}/demo-app:${{ github.sha }}
 
+      # 🔥 UPDATE K8S YAML
       - name: Update Kubernetes Manifest and Push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          sed -i "s|image:.*|image: manojdeshmukh45/demo-app:${{ github.sha }}|g" k8s/deployment.yaml
+          sed -i "s|image:.*|image: r.badshah.io/${{ secrets.HARBOR_USERNAME##*+ }}/demo-app:${{ github.sha }}|g" k8s/deployment.yaml
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git commit -am "Update image tag"
