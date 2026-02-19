@@ -16,7 +16,7 @@ spec:
         - name: harbor-secret
       containers:
         - name: demo-app
-          image: r.badshah.io/manojdmd45-project/demo-app:latest
+          image: nginx:stable-alpine3.23-perl
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
